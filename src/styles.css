@@ -11,6 +11,7 @@
   --gold: #b59758;
   --muted: #6f6a63;
   --muted-light: #a8a29a;
+  --hero-bg: #0d0d0d;      /* neutral black to match the monochrome hero photograph */
 
   --f-display: 'Archivo', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
   --f-body: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
@@ -124,6 +125,19 @@ a {
 .display--light {
   color: var(--off);
 }
+/* Size the heading against its own column: --fit is the longest word's width in ems.
+   Browsers without container queries keep the clamp() above; overflow-wrap is a last-resort guard. */
+.display {
+  font-size: min(clamp(36px, 5.4vw, 80px), calc(100cqi / var(--fit, 9)));
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+.section-head > div:first-child,
+.story-text,
+.waitlist-grid > div:first-child {
+  container-type: inline-size;
+  min-width: 0;
+}
 
 .section {
   padding-block: clamp(80px, 10vw, 152px);
@@ -136,6 +150,9 @@ a {
   gap: clamp(24px, 5vw, 96px);
   align-items: end;
   margin-bottom: clamp(40px, 5vw, 72px);
+}
+.section-head > * {
+  min-width: 0;
 }
 .section-intro {
   margin: 0;
@@ -424,7 +441,7 @@ a {
 .hero {
   position: relative;
   min-height: max(640px, 100svh);
-  background: var(--ink);
+  background: var(--hero-bg);
   color: var(--off);
   display: flex;
   align-items: flex-end;
@@ -434,21 +451,24 @@ a {
 .hero-media {
   position: absolute;
   inset: 0 0 0 auto;
-  width: 64%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  width: 60%;
   z-index: -1;
 }
 .hero-media .media {
+  position: absolute;
+  inset: 0;
   height: 100%;
+}
+.hero-photo {
+  object-position: 42% 28%;
 }
 .hero-shade {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, var(--ink) 0%, rgba(18, 11, 9, 0.7) 14%, rgba(18, 11, 9, 0) 44%),
-    linear-gradient(0deg, rgba(18, 11, 9, 0.8) 0%, rgba(18, 11, 9, 0) 34%),
-    linear-gradient(180deg, rgba(18, 11, 9, 0.55) 0%, rgba(18, 11, 9, 0) 18%);
+    linear-gradient(90deg, var(--hero-bg) 0%, rgba(13, 13, 13, 0.78) 14%, rgba(13, 13, 13, 0.18) 42%, rgba(13, 13, 13, 0) 60%),
+    linear-gradient(0deg, rgba(13, 13, 13, 0.82) 0%, rgba(13, 13, 13, 0) 36%),
+    linear-gradient(180deg, rgba(13, 13, 13, 0.6) 0%, rgba(13, 13, 13, 0) 20%);
 }
 .hero-content {
   position: relative;
@@ -458,17 +478,20 @@ a {
   padding-left: var(--pad-l);
   padding-right: var(--pad-r);
   padding-block: calc(var(--header-h) + 64px) clamp(56px, 9vh, 112px);
+  container-type: inline-size;
 }
 .hero-title {
   margin: 0 0 28px;
   font-family: var(--f-display);
   font-weight: 900;
   font-stretch: 118%;
-  font-size: clamp(46px, 7.4vw, 118px);
+  font-size: clamp(42px, 6.2vw, 100px);
+  /* "REIMAGINED." is the longest line, about 10.8em wide: never let it outgrow the content box */
+  font-size: min(clamp(42px, 6.2vw, 100px), calc(100cqi / 10.8));
   line-height: 0.9;
   letter-spacing: -0.015em;
   text-transform: uppercase;
-  max-width: 11ch;
+  overflow-wrap: break-word;
 }
 .hero-sub {
   margin: 0 0 40px;
@@ -552,6 +575,11 @@ a {
   background: var(--burgundy);
   color: var(--off);
 }
+.tag--concept {
+  background: rgba(27, 27, 27, 0.86);
+  color: var(--gold);
+  border: 1px solid rgba(181, 151, 88, 0.55);
+}
 .armor-meta {
   display: flex;
   justify-content: space-between;
@@ -613,6 +641,28 @@ a {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted-light);
+}
+.concepts {
+  background: var(--off);
+}
+.price-disclaimer--dark {
+  border-bottom-color: var(--line);
+  color: var(--muted);
+}
+.concepts .product-sub {
+  color: var(--muted);
+}
+.concepts .price-note {
+  color: var(--burgundy);
+}
+.concepts .link-reset:hover {
+  color: var(--burgundy);
+}
+.product-grid.product-grid--concepts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.product-card {
+  min-width: 0;
 }
 .product-grid {
   display: grid;
@@ -816,6 +866,17 @@ a {
 }
 .field {
   margin-bottom: 20px;
+}
+.concept-note {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-left: 2px solid var(--gold);
+  background: var(--stone);
+  font-size: 13px;
+  color: #45403b;
+}
+.sizes--single {
+  grid-template-columns: minmax(0, 160px);
 }
 .field-label {
   display: flex;
@@ -1359,8 +1420,14 @@ a {
 /* ---------- Responsive ---------- */
 
 @media (max-width: 1100px) {
-  .product-grid {
+  .product-grid,
+  .product-grid.product-grid--concepts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .section-head {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 24px;
   }
 }
 
@@ -1377,24 +1444,19 @@ a {
   .menu-btn {
     display: inline-grid;
   }
-  .section-head {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-  }
   .armor-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .hero-media {
     width: 100%;
-    grid-template-columns: 1fr;
   }
-  .hero-media-second {
-    display: none !important;
+  .hero-photo {
+    object-position: 50% 22%;
   }
   .hero-shade {
     background:
-      linear-gradient(0deg, var(--ink) 0%, rgba(18, 11, 9, 0.75) 32%, rgba(18, 11, 9, 0) 62%),
-      linear-gradient(180deg, rgba(18, 11, 9, 0.6) 0%, rgba(18, 11, 9, 0) 20%);
+      linear-gradient(0deg, var(--hero-bg) 0%, rgba(13, 13, 13, 0.78) 34%, rgba(13, 13, 13, 0) 64%),
+      linear-gradient(180deg, rgba(13, 13, 13, 0.6) 0%, rgba(13, 13, 13, 0) 20%);
   }
   .hero-verse {
     display: none;

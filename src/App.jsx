@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, ArrowUpRight, Check, Menu, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
-import { ARMOR, IMAGES, PRODUCTS, SIZES, asset, formatPrice } from './data.js';
+import { ARMOR, CONCEPTS, IMAGES, PRODUCTS, asset, formatPrice } from './data.js';
 
 /* ---------- Shared pieces ---------- */
 
@@ -88,11 +88,12 @@ function Header({ cartCount, onCart }) {
       setSolid(window.scrollY > 40);
       const y = window.scrollY + window.innerHeight * 0.35;
       let current = 'home';
-      for (const id of ['collection', 'drop', 'story', 'waitlist']) {
+      for (const id of ['collection', 'drop', 'concepts', 'story', 'waitlist']) {
         const el = document.getElementById(id);
         if (el && el.offsetTop <= y) current = id;
       }
-      setActive(current === 'drop' ? 'collection' : current === 'waitlist' ? 'story' : current);
+      const map = { drop: 'collection', concepts: 'collection', waitlist: 'story' };
+      setActive(map[current] || current);
     };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -158,9 +159,13 @@ function Header({ cartCount, onCart }) {
 function Hero() {
   return (
     <section id="home" className="hero">
-      <div className="hero-media" aria-hidden="false">
-        <Media src={IMAGES.heroFront} alt="Model in the oversized Glory Core hoodie and wide cargo trousers" eager position="center 20%" />
-        <Media src={IMAGES.heroBack} alt="Back view of the Chamados hoodie print" eager className="hero-media-second" position="center 20%" />
+      <div className="hero-media">
+        <Media
+          src={IMAGES.hero}
+          alt="A man in a black Glory Garments tee stands with his back to the camera during worship"
+          eager
+          className="hero-photo"
+        />
         <div className="hero-shade" />
       </div>
       <div className="hero-content">
@@ -215,11 +220,13 @@ function Collection() {
             <button
               key={a.id}
               className={`armor-card ${a.live ? 'is-live' : ''}`}
-              onClick={() => scrollToId(a.live ? 'drop' : 'waitlist')}
+              onClick={() => scrollToId(a.target)}
             >
               <div className="armor-img">
                 <Media src={a.image} alt={`${a.name}: ${a.category}`} position={a.position} />
-                <span className={`tag ${a.live ? 'tag--live' : ''}`}>{a.live ? 'Drop 01 · Live' : 'Coming later'}</span>
+                <span className={`tag ${a.live ? 'tag--live' : ''} ${a.status === 'Concept' ? 'tag--concept' : ''}`}>
+                  {a.status}
+                </span>
               </div>
               <div className="armor-meta">
                 <div>
@@ -229,7 +236,7 @@ function Collection() {
                 <span className="verse">{a.verse}</span>
               </div>
               <span className="armor-cta">
-                {a.live ? 'Shop the drop' : 'Join the waitlist'} <ArrowUpRight size={16} strokeWidth={1.5} />
+                {a.cta} <ArrowUpRight size={16} strokeWidth={1.5} />
               </span>
             </button>
           ))}
@@ -247,6 +254,7 @@ function ProductCard({ product, onOpen }) {
       <button className="product-img" onClick={() => onOpen(product)} aria-label={`View ${product.name}`}>
         <Media src={product.images[0]} alt={product.name} />
         {product.images[1] && <Media src={product.images[1]} alt="" className="product-img-alt" position="center 25%" />}
+        {product.concept && <span className="tag tag--concept">Concept</span>}
         <span className="quick-view">Quick view</span>
       </button>
       <div className="product-meta">
@@ -276,9 +284,9 @@ function Drop({ onOpen }) {
         <div className="section-head">
           <div>
             <p className="eyebrow eyebrow--gold">Drop 01 · Ephesians 6:14</p>
-            <h2 className="display display--light">
-              The Breastplate
-              <br /> of Righteousness
+            {/* --fit: width of the longest word ("RIGHTEOUSNESS") in ems, so the heading shrinks before it can overflow */}
+            <h2 className="display display--light display--fit" style={{ '--fit': 12 }}>
+              The Breastplate of Righteousness
             </h2>
           </div>
           <p className="section-intro section-intro--light">
@@ -289,6 +297,35 @@ function Drop({ onOpen }) {
         <p className="price-disclaimer">Prices are illustrative samples for this prototype.</p>
         <div className="product-grid">
           {PRODUCTS.map((p) => (
+            <ProductCard key={p.id} product={p} onOpen={onOpen} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Concept accessories ---------- */
+
+function Concepts({ onOpen }) {
+  return (
+    <section id="concepts" className="section concepts">
+      <div className="wrap">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Phase 2 and beyond · Concepts</p>
+            <h2 className="display display--fit" style={{ '--fit': 10 }}>
+              The rest of the armour
+            </h2>
+          </div>
+          <p className="section-intro">
+            Early concepts for the Belt of Truth, Shoes of the Gospel of Peace, Shield of Faith and Sword of the Spirit.
+            These pieces are illustrative and not confirmed inventory.
+          </p>
+        </div>
+        <p className="price-disclaimer price-disclaimer--dark">Concept pieces · prices are illustrative samples</p>
+        <div className="product-grid product-grid--concepts">
+          {CONCEPTS.map((p) => (
             <ProductCard key={p.id} product={p} onOpen={onOpen} />
           ))}
         </div>
@@ -308,7 +345,7 @@ function ProductModal({ product, onClose, onAdd }) {
 
   useEffect(() => {
     setImgIndex(0);
-    setSize(null);
+    setSize(product?.sizes?.length === 1 ? product.sizes[0] : null);
     setError(false);
     setAdded(false);
     if (product) setTimeout(() => closeRef.current?.focus(), 30);
@@ -355,22 +392,31 @@ function ProductModal({ product, onClose, onAdd }) {
           )}
         </div>
         <div className="modal-info">
-          <p className="eyebrow">Breastplate of Righteousness · {product.verse}</p>
+          <p className="eyebrow">
+            {product.collection} · {product.verse}
+          </p>
           <h2 id="modal-title" className="modal-title">
             {product.name}
           </h2>
           <p className="modal-price">
             {formatPrice(product.price)} <span className="price-note">Illustrative price</span>
           </p>
+          {product.concept && (
+            <p className="concept-note">Concept piece. Shown for illustration and not confirmed inventory.</p>
+          )}
           <p className="modal-blurb">{product.blurb}</p>
 
           <div className="field">
             <div className="field-label">
               <span>Size</span>
-              <span className="muted">Oversized fit · take your usual size</span>
+              <span className="muted">{product.sizeNote}</span>
             </div>
-            <div className="sizes" role="radiogroup" aria-label="Size">
-              {SIZES.map((s) => (
+            <div
+              className={`sizes ${product.sizes.length === 1 ? 'sizes--single' : ''}`}
+              role="radiogroup"
+              aria-label="Size"
+            >
+              {product.sizes.map((s) => (
                 <button
                   key={s}
                   role="radio"
@@ -469,7 +515,7 @@ function CartDrawer({ open, items, onClose, onQty, onRemove }) {
                       <div>
                         <p className="line-name">{item.product.name}</p>
                         <p className="muted">
-                          Size {item.size} · {item.product.colour}
+                          {item.size === 'One size' ? 'One size' : `Size ${item.size}`} · {item.product.colour}
                         </p>
                       </div>
                       <p className="line-price">{formatPrice(item.product.price * item.qty)}</p>
@@ -723,7 +769,7 @@ export default function App() {
       if (found) return c.map((i) => (i.key === key ? { ...i, qty: i.qty + 1 } : i));
       return [...c, { key, product: p, size, qty: 1 }];
     });
-    setToast(`${p.name}, size ${size}, added to your bag`);
+    setToast(`${p.name}${size === 'One size' ? '' : `, size ${size}`}, added to your bag`);
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(''), 2600);
   }, []);
@@ -742,6 +788,7 @@ export default function App() {
         <Hero />
         <Collection />
         <Drop onOpen={setProduct} />
+        <Concepts onOpen={setProduct} />
         <Story />
         <Waitlist />
       </main>
